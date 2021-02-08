@@ -17,6 +17,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     super(instanceSettings);
   }
 
+  // Code for dataframes
   /*
   async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
     const promises = options.targets.map((query) =>{
@@ -60,47 +61,27 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     })
     return Promise.all(promises).then((data) => ({ data }))
   }*/
+
+  // Code for topology
   async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-   
-    
- 
-    // Return a constant for each query.
     const data: QueryResponse[] = [
-    
-      {
-          columns: [
-              { type: "time", text: "Time" },
-              { text: "app" },
-              { text: "target_app" },
-              { text: "req_rate" },
-              { text: "resp_time" }
-          ],
-          refId: undefined,
-          meta: undefined,
-          rows: [
-              [0, "service a java", "service b http", 50, 4000],
-              [0, "service a java", "service c java", 75, 13650],
-              [0, "service c java", "service d http", 25, 750]
-          ]
-      }
-      ,
       {
         columns: [
-          { type: "time", text: "Time"},
-          { text: "app" },
-          { text: "target_app" },
-          { text: "error_rate" }
+            { type: "time", text: "Time" },
+            { text: "app" },
+            { text: "target_app" },
+            { text: "req_rate" },
+            { text: "resp_time" },
+            { text: "error_rate" }
         ],
         refId: undefined,
         meta: undefined,
         rows: [
-          [0, "service a java", "service b http", 5],
-          [0, "service a java", "service c java", 0],
-          [0, "service c java", "service d http", 1]
+            [0, "service a", "service b", 50, 4000, 5],
+            [0, "service a", "service c", 75, 13650, 0],
+            [0, "service c", "service d", 25, 750, 1]
         ]
       }
-      
-      
     ]
     return { data };
   }
