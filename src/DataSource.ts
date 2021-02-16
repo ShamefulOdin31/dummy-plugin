@@ -1,5 +1,5 @@
 import { QueryResponse } from './types';
-import { Observable, merge, of, from} from 'rxjs';
+import { Observable, merge, of} from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { NodeGraphDataFrameFieldNames } from '@grafana/ui';
 import {
@@ -35,11 +35,10 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
           streams.push(this.nodegraph_test(target, options));
           break;
         case 2:
-          this.dataframes_test(target, options);
+          streams.push(this.dataframes_test(target, options));
           break;
-        
         case 3:
-          this.topology_test(target, options);
+          streams.push(this.topology_test(target, options));
           break;
       }
     }
@@ -69,12 +68,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     return { data };
   }
 
-  dataframes_test(target: MyQuery, options: DataQueryRequest<MyQuery>): any{
+  dataframes_test(target: MyQuery, options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse>{
     var timeValues :any
     var actualValues :any
 
-    timeValues = [1611306000000, 1611309600000]
-    actualValues = ["true", "false"];
+    timeValues = [1613445901000, 1613499901000, 1613525291000]
+    actualValues = ["true", "false", 'true'];
 
     const frame = new MutableDataFrame({
       refId: options.targets[0].refId,
@@ -86,7 +85,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     for(let i = 0; i < timeValues.length; i++){
       frame.appendRow([timeValues[i], actualValues[i]])
     }
-    return frame;
+    console.log(frame)
+    return of({ data: [frame] }).pipe(delay(100));
   }
 
   nodegraph_test(target: MyQuery, options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
@@ -101,8 +101,8 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       subTitle: 'client',
       success: 1,
       error: 0,
-      stat1: Math.random(),
-      stat2: Math.random(),
+      stat1: 1,
+      stat2: 0,
       edges: [] as any[],
     };
 
@@ -151,7 +151,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       if (sourceIndex === targetIndex || nodes[sourceIndex].id === '0' || nodes[sourceIndex].id === '0') {
         continue;
       }
-  
+      // This value will later be used as the target of a nodes edge.
       nodes[sourceIndex].edges.push(nodes[sourceIndex].id);
     }
   
@@ -196,6 +196,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         ...nodeFields[key],
         name: key,
       })),
+      // Documentation says this is required for the nodeGraph to work
       meta: { preferredVisualisationType: 'nodeGraph' },
     });
   
@@ -222,9 +223,11 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
         ...edgeFields[key],
         name: key,
       })),
+      // Documentation says this is required for the nodeGraph to work
       meta: { preferredVisualisationType: 'nodeGraph' },
     });
   
+    // Adding values to the fields
     for (const node of nodes) {
       nodeFields.id.values.add(node.id);
       nodeFields.title.values.add(node.title);
@@ -233,10 +236,12 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
       nodeFields.secondaryStat.values.add(node.stat2);
       nodeFields.arc__success.values.add(node.success);
       nodeFields.arc__errors.values.add(node.error);
+      // Adding values to the edges for the nodes. 
       for (const edge of node.edges) {
         edgeFields.id.values.add(`${node.id}--${edge}`);
         edgeFields.source.values.add(node.id);
         edgeFields.target.values.add(edge);
+        console.log(edge)
       }
     }
     frames = [nodeFrame, edgesFrame]
