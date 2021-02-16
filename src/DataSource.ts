@@ -1,4 +1,6 @@
-//import { QueryResponse } from './types';
+import { QueryResponse } from './types';
+import { Observable, merge, of, from} from 'rxjs';
+import { delay } from 'rxjs/operators';
 import { NodeGraphDataFrameFieldNames } from '@grafana/ui';
 import {
   DataQueryRequest,
@@ -8,7 +10,8 @@ import {
   FieldColorModeId,
   FieldType,
   MutableDataFrame,
-  ArrayVector
+  ArrayVector,
+  DataFrame
  // toDataFrame,
 } from '@grafana/data';
 
@@ -19,238 +22,31 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     super(instanceSettings);
   }
 
-  // Code for dataframes
-  
-  /*async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-    const promises = options.targets.map((query) =>{
-      var timeValues :any
-      var actualValues :any
-      console.log(query)
+  query(options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+    const streams: Array<Observable<DataQueryResponse>> = [];
 
-      if(query["constant"] == 0){
-        timeValues = [1611306000000, 1611309600000]
-        actualValues = ["true", "false"];
-
-        const frame = new MutableDataFrame({
-          refId: query.refId,
-          fields: [
-            { name: "Time", type: FieldType.time },
-            { name: "Values", type: FieldType.string },
-          ],
-        });
-        for(let i = 0; i < timeValues.length; i++){
-          frame.appendRow([timeValues[i], actualValues[i]])
-        }
-        return frame;
-      }
-      
-      else {
-        timeValues = [1611306000000, 1611309600000]
-        actualValues = ["false", "true"];
-        const frame = new MutableDataFrame({
-          refId: query.refId,
-          fields: [
-            { name: "Time", type: FieldType.time },
-            { name: "Test", type: FieldType.string },
-          ],
-        });
-        for(let i = 0; i < timeValues.length; i++){
-          frame.appendRow([timeValues[i], actualValues[i]])
-        }
-        return frame;
-      }
-      
-    })
-    return Promise.all(promises).then((data) => ({ data }))
-  }*/
-
-  async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
-    const promises = options.targets.map((query) =>{
-      const idField = {
-        name: NodeGraphDataFrameFieldNames.id,
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-      const titleField = {
-        name: NodeGraphDataFrameFieldNames.title,
-        type: FieldType.string,
-        values: new ArrayVector(),
-        config: { displayName: 'Name' },
-      };
-    
-      const typeField = {
-        name: NodeGraphDataFrameFieldNames.subTitle,
-        type: FieldType.string,
-        values: new ArrayVector(),
-        config: { displayName: 'Type' },
-      };
-    
-      const mainStatField = {
-        name: NodeGraphDataFrameFieldNames.mainStat,
-        type: FieldType.number,
-        values: new ArrayVector(),
-        config: { unit: 'ms/t', displayName: 'Average response time' },
-      };
-    
-      const secondaryStatField = {
-        name: NodeGraphDataFrameFieldNames.secondaryStat,
-        type: FieldType.string,
-        values: new ArrayVector(),
-        config: { displayName: 'Requests count' },
-      };
-    
-      const successField = {
-        name: NodeGraphDataFrameFieldNames.arc + 'success',
-        type: FieldType.number,
-        values: new ArrayVector(),
-        config: { color: { fixedColor: 'green', mode: FieldColorModeId.Fixed } },
-      };
-    
-      const errorsField = {
-        name: NodeGraphDataFrameFieldNames.arc + 'errors',
-        type: FieldType.number,
-        values: new ArrayVector(),
-        config: { color: { fixedColor: 'semi-dark-yellow', mode: FieldColorModeId.Fixed } },
-      };
-    
-      const faultsField = {
-        name: NodeGraphDataFrameFieldNames.arc + 'faults',
-        type: FieldType.number,
-        values: new ArrayVector(),
-        config: { color: { fixedColor: 'red', mode: FieldColorModeId.Fixed } },
-      };
-    
-      const throttledField = {
-        name: NodeGraphDataFrameFieldNames.arc + 'throttled',
-        type: FieldType.number,
-        values: new ArrayVector(),
-        config: { color: { fixedColor: 'purple', mode: FieldColorModeId.Fixed } },
-      };
-    
-      const edgeIdField = {
-        name: NodeGraphDataFrameFieldNames.id,
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-      const edgeSourceField = {
-        name: NodeGraphDataFrameFieldNames.source,
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-      const edgeTargetField = {
-        name: NodeGraphDataFrameFieldNames.target,
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-    
-      // These are needed for links to work
-      const edgeSourceNameField = {
-        name: 'sourceName',
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-      const edgeTargetNameField = {
-        name: 'targetName',
-        type: FieldType.string,
-        values: new ArrayVector(),
-      };
-
-      const edgeMainStatField = {
-        name: NodeGraphDataFrameFieldNames.mainStat,
-        type: FieldType.string,
-        values: new ArrayVector(),
-        config: { displayName: 'Response percentage' },
-      };
-
-      const edgeSecondaryStatField = {
-        name: NodeGraphDataFrameFieldNames.secondaryStat,
-        type: FieldType.string,
-        values: new ArrayVector(),
-        config: { displayName: 'Requests count' },
-      };
-      
-      let ids = ["A", "B"];
-      let titles = ["test1", "test2"];
-      let subtitles = ['sub1', 'sub2'];
-      let arcVal = [1, 1];
-      let secstat = ["sec stat 1", "sec stat 2"];
-      let sucess = [0, 1];
-      let throttle = [0, 0]
-      let erros = [0, 0];
-      let thr = [0, 0]
-
-      let ids2 = ['1', '2'];
-      let source = ['A', 'B'];
-      let sourceName = ['test1', 'test2'];
-      let target = ['B', 'A'];
-      let targetName = ['test3', 'test4']
-      let mainstat2 = ['edge1', 'edge2'];
-      let secstatedge = ['test34', 'test43']
-
-
-      for(let i = 0; i < ids.length; i++){
-        idField.values.add(ids[i]);
-        titleField.values.add(titles[i]);
-        typeField.values.add(subtitles[i]);
-        mainStatField.values.add(arcVal[i]);
-        secondaryStatField.values.add(secstat[i]);
-        successField.values.add(sucess[i]);
-        faultsField.values.add(throttle[i]);
-        errorsField.values.add(erros[i]);
-        throttledField.values.add(thr[i]);
-
-        edgeIdField.values.add(ids2[i]);
-        edgeSourceField.values.add(source[i]);
-        edgeSourceNameField.values.add(sourceName[i]);
-        edgeTargetField.values.add(target[i]);
-        edgeTargetNameField.values.add(targetName[i]);
-        edgeMainStatField.values.add(mainstat2[i]);
-        edgeSecondaryStatField.values.add(secstatedge[i])
+    for(const target of options.targets){
+      if(target.hide){
+        continue;
       }
 
-      return [
-        new MutableDataFrame({
-          name: 'nodes',
-          refId: query?.refId,
-          fields: [
-            idField,
-            titleField,
-            typeField,
-            mainStatField,
-            secondaryStatField,
-            successField,
-            faultsField,
-            errorsField,
-            throttledField,
-          ],
-          meta: {
-            preferredVisualisationType: 'nodeGraph',
-          },
-        }),
-        new MutableDataFrame({
-          name: 'edges',
-          refId: query?.refId,
-          fields: [
-            edgeIdField,
-            edgeSourceField,
-            edgeSourceNameField,
-            edgeTargetField,
-            edgeTargetNameField,
-            edgeMainStatField,
-            edgeSecondaryStatField,
-          ],
-          meta: {
-            preferredVisualisationType: 'nodeGraph',
-          },
-        }),
-      ];
-
-    })
-    return Promise.all(promises).then((data) => ({ data }))
+      switch(target.constant){
+        case 1:
+          streams.push(this.nodegraph_test(target, options));
+          break;
+        case 2:
+          this.dataframes_test(target, options);
+          break;
+        
+        case 3:
+          this.topology_test(target, options);
+          break;
+      }
+    }
+    return merge(...streams)
   }
 
-  // Code for topology
-  /*async query(options: DataQueryRequest<MyQuery>): Promise<DataQueryResponse> {
+  topology_test(target: MyQuery, options: DataQueryRequest<MyQuery>): any{
     const data: QueryResponse[] = [
       {
         columns: [
@@ -272,10 +68,182 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     ]
     return { data };
   }
-  */
 
+  dataframes_test(target: MyQuery, options: DataQueryRequest<MyQuery>): any{
+    var timeValues :any
+    var actualValues :any
+
+    timeValues = [1611306000000, 1611309600000]
+    actualValues = ["true", "false"];
+
+    const frame = new MutableDataFrame({
+      refId: options.targets[0].refId,
+      fields: [
+        { name: "Time", type: FieldType.time },
+        { name: "Values", type: FieldType.string },
+      ],
+    });
+    for(let i = 0; i < timeValues.length; i++){
+      frame.appendRow([timeValues[i], actualValues[i]])
+    }
+    return frame;
+  }
+
+  nodegraph_test(target: MyQuery, options: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+    let frames: DataFrame[];
+    const count = 10;
+    const nodes = [];
+
+    // Creates the root node.
+    const root = {
+      id: '0',
+      title: 'root',
+      subTitle: 'client',
+      success: 1,
+      error: 0,
+      stat1: Math.random(),
+      stat2: Math.random(),
+      edges: [] as any[],
+    };
+
+    // Adds the root node to the nodes array.
+    nodes.push(root);
+
+    // Used for the randomized edges
+    const nodesWithoutMaxEdges = [root];
+    const maxEdges = 3;
+  
+    // Loops 10 times to create nodes
+    // This for loop is what would need to change for actual use.
+    for (let i = 1; i < count; i++) {
+      //Creates node with data.
+      const success = Math.random();
+      const error = 1 - success;
+      const node = {
+        id: i.toString(),
+        title: `service:${i}`,
+        subTitle: 'service',
+        success,
+        error,
+        stat1: success,
+        stat2: error,
+        edges: [],
+      };
+
+      // Adds new node to array.
+      nodes.push(node);
+
+      // Randomizes the source for edges. 
+      const sourceIndex = Math.floor(Math.random() * Math.floor(nodesWithoutMaxEdges.length - 1));
+      const source = nodesWithoutMaxEdges[sourceIndex];
+      source.edges.push(node.id);
+      if (source.edges.length >= maxEdges) {
+        nodesWithoutMaxEdges.splice(sourceIndex, 1);
+      }
+      nodesWithoutMaxEdges.push(node);
+    }
+  
+    // Creates random edges to random sources and targets
+    const additionalEdges = Math.floor(count / 2);
+    for (let i = 0; i <= additionalEdges; i++) {
+      const sourceIndex = Math.floor(Math.random() * Math.floor(nodes.length - 1));
+      const targetIndex = Math.floor(Math.random() * Math.floor(nodes.length - 1));
+      if (sourceIndex === targetIndex || nodes[sourceIndex].id === '0' || nodes[sourceIndex].id === '0') {
+        continue;
+      }
+  
+      nodes[sourceIndex].edges.push(nodes[sourceIndex].id);
+    }
+  
+    // Creates the fields for the nodes
+    const nodeFields: any = {
+      [NodeGraphDataFrameFieldNames.id]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+      [NodeGraphDataFrameFieldNames.title]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+      [NodeGraphDataFrameFieldNames.subTitle]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+      [NodeGraphDataFrameFieldNames.mainStat]: {
+        values: new ArrayVector(),
+        type: FieldType.number,
+      },
+      [NodeGraphDataFrameFieldNames.secondaryStat]: {
+        values: new ArrayVector(),
+        type: FieldType.number,
+      },
+      [NodeGraphDataFrameFieldNames.arc + 'success']: {
+        values: new ArrayVector(),
+        type: FieldType.number,
+        config: { color: { fixedColor: 'green', mode: FieldColorModeId.Fixed } },
+      },
+      [NodeGraphDataFrameFieldNames.arc + 'errors']: {
+        values: new ArrayVector(),
+        type: FieldType.number,
+        config: { color: { fixedColor: 'red', mode: FieldColorModeId.Fixed } },
+      },
+    };
+  
+    // Creates the dataframe for the nodes using the above fields. 
+    const nodeFrame = new MutableDataFrame({
+      name: 'nodes',
+      fields: Object.keys(nodeFields).map((key) => ({
+        ...nodeFields[key],
+        name: key,
+      })),
+      meta: { preferredVisualisationType: 'nodeGraph' },
+    });
+  
+    // Creates the fields for the edges.
+    const edgeFields: any = {
+      [NodeGraphDataFrameFieldNames.id]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+      [NodeGraphDataFrameFieldNames.source]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+      [NodeGraphDataFrameFieldNames.target]: {
+        values: new ArrayVector(),
+        type: FieldType.string,
+      },
+    };
+  
+    // Creates the dataframe for the edges with the above fields. 
+    const edgesFrame = new MutableDataFrame({
+      name: 'edges',
+      fields: Object.keys(edgeFields).map((key) => ({
+        ...edgeFields[key],
+        name: key,
+      })),
+      meta: { preferredVisualisationType: 'nodeGraph' },
+    });
+  
+    for (const node of nodes) {
+      nodeFields.id.values.add(node.id);
+      nodeFields.title.values.add(node.title);
+      nodeFields.subTitle.values.add(node.subTitle);
+      nodeFields.mainStat.values.add(node.stat1);
+      nodeFields.secondaryStat.values.add(node.stat2);
+      nodeFields.arc__success.values.add(node.success);
+      nodeFields.arc__errors.values.add(node.error);
+      for (const edge of node.edges) {
+        edgeFields.id.values.add(`${node.id}--${edge}`);
+        edgeFields.source.values.add(node.id);
+        edgeFields.target.values.add(edge);
+      }
+    }
+    frames = [nodeFrame, edgesFrame]
+    return of({ data: frames }).pipe(delay(100));
+  }
+  
   async testDatasource() {
-    // Implement a health check for your data source.
     return {
       status: 'success',
       message: 'Success',
