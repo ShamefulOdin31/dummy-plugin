@@ -72,7 +72,7 @@ export class DataSource extends DataSourceApi<MyQuery, MyDataSourceOptions> {
     var timeValues :any
     var actualValues :any
 
-    timeValues = [1613445901000, 1613499901000, 1613525291000]
+    timeValues = [1613368800000, 1613412000000, 1613455200000]
     actualValues = ["true", "false", 'true'];
 
     const frame = new MutableDataFrame({
